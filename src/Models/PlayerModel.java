@@ -5,8 +5,8 @@ import java.util.List;
 
 public class PlayerModel {
 
-    BoardModel playerBoard;
-    BoardModel opponentBoard;
+    public BoardModel playerBoard;
+    public BoardModel opponentBoard;
 
     List<ShipModel> ships = new ArrayList<>();
 
@@ -23,6 +23,18 @@ public class PlayerModel {
             }
         }
         return true;
+    }
+
+    public boolean placeShip(int xCor, int yCor){
+        if(playerBoard.getCellState(xCor, yCor) == BoardModel.CellState.EMPTY) {
+            playerBoard.setCellState(xCor, yCor, BoardModel.CellState.SHIP);
+            System.out.println("Ship placed!");
+            return true;
+        }
+        else{
+            System.out.println("Ship not placed! Cell is not empty!");
+            return false;
+        }
     }
 
 }

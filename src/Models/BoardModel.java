@@ -9,11 +9,15 @@ public class BoardModel {
         SUNK
     }
     private CellState[][] boardArray;
+    private int boardColumns;
+    private int boardRows;
 
     public BoardModel(){
-        boardArray = new CellState[9][9];
-        for (int row = 0; row < 9; row++) {
-            for (int col = 0; col < 9; col++) {
+        boardColumns = 9;
+        boardRows = 9;
+        boardArray = new CellState[boardColumns][boardRows];
+        for (int col = 0; col < boardColumns; col++) {
+            for (int row = 0; row < boardColumns; row++) {
                 boardArray[row][col] = CellState.EMPTY;
             }
         }
@@ -24,6 +28,53 @@ public class BoardModel {
     }
     public void setCellState(int row, int col, CellState state){
         boardArray[row][col] = state;
+    }
+
+    public boolean allCellsAre(CellState expectedState){
+        for (int col= 0; col < boardColumns; col++) {
+            for (int row = 0; row < boardColumns; row++) {
+                if(boardArray[row][col] != expectedState){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    public void printBoard() {
+        System.out.print("    ");
+        for (int col = 0; col < boardColumns; col++) {
+            System.out.print(col + " ");
+        }
+        System.out.println();
+        System.out.println("   --------------------");
+
+        for (int row = 0; row < boardRows; row++) {
+            System.out.print(row + " | ");
+            for (int col = 0; col < boardColumns; col++) {
+                CellState state = boardArray[row][col];
+                System.out.print(getCellSymbol(state) + " ");
+            }
+            System.out.println("|");
+        }
+        System.out.println("   --------------------");
+
+        // Print legend
+        System.out.println("\n   Legend: · = Empty  S = Ship  X = Hit  O = Miss");
+    }
+
+    private String getCellSymbol(CellState state) {
+        switch (state) {
+            case EMPTY:
+                return "·";
+            case SHIP:
+                return "S";
+            case HIT:
+                return "X";
+            case MISS:
+                return "O";
+            default:
+                return "?";
+        }
     }
 
 
