@@ -12,7 +12,12 @@ public class PlayerModel {
     List<ShipModel> ships = new ArrayList<>();
 
     public PlayerModel(){
-        ships.add(new ShipModel(ShipModel.Orientation.VERTICAL,5,6));
+        ships.add(new ShipModel(ShipModel.Orientation.VERTICAL,0,0, 2));
+        ships.add(new ShipModel(ShipModel.Orientation.VERTICAL,1,6,3 ));
+        ships.add(new ShipModel(ShipModel.Orientation.VERTICAL,3,5, 3));
+        ships.add(new ShipModel(ShipModel.Orientation.VERTICAL,2,3, 5));
+        //ships.add(new ShipModel(ShipModel.Orientation.VERTICAL,5, 5, 5);
+
         playerBoard = new BoardModel();
         opponentBoard = new BoardModel();
     }
@@ -45,7 +50,7 @@ public class PlayerModel {
     }
 
     public boolean placeShip(int row, int col, ShipModel.Orientation orientation, int length){
-        ShipModel ship = new ShipModel(orientation, row, col);
+        ShipModel ship = new ShipModel(orientation, row, col, length);
         ship.length = length;
         ship.Row = row;
         ship.Column = col;
@@ -121,6 +126,8 @@ public class PlayerModel {
             return null;
         }
     }
+
+    public
 
 
 

@@ -60,8 +60,8 @@ class BoardViewPanel extends JPanel implements ActionListener, ItemListener{
 
     public void itemStateChanged(ItemEvent e) {
         if (e.getStateChange() == ItemEvent.SELECTED) {
-
             System.out.println("Checked!");
+            
         } else {
             System.out.println("Unchecked!");
         }
