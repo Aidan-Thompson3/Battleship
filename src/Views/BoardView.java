@@ -5,6 +5,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemListener;
 import java.awt.event.ItemEvent;
 import javax.swing.*;
+import Models.*;
 
 public class BoardView {
     public static void main(String args[]) {
@@ -20,6 +21,8 @@ public class BoardView {
 class BoardViewPanel extends JPanel implements ActionListener, ItemListener{
     private GridLayout gridLayout;
     private static final String[] ROW_LABELS = {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"};
+    private JButton[][] boardButtons = new JButton[10][10];
+
 
     public BoardViewPanel(){
         // 10x10 grid to include row and column labels
@@ -37,7 +40,7 @@ class BoardViewPanel extends JPanel implements ActionListener, ItemListener{
             add(colLabel);
         }
 
-        // Add rows with letter labels and radio buttons
+        // Add rows with letter labels and buttons
         for(int row = 0; row < 10; row++){
             // Add row letter (A-J)
             JLabel rowLabel = new JLabel(ROW_LABELS[row], SwingConstants.CENTER);
@@ -46,22 +49,39 @@ class BoardViewPanel extends JPanel implements ActionListener, ItemListener{
 
             // Add radio buttons for this row
             for(int col = 0; col < 10; col++){
-                JRadioButton rb = new JRadioButton();
-                rb.addItemListener(this);
-                add(rb);
+                JButton button = new JButton();
+                button.setOpaque(true);
+                button.addActionListener(this);
+                button.setActionCommand(row + "," + col); //Attatches coordinate to each button
+                boardButtons[row][col] = button;
+                add(button);
             }
         }
+
+
+
     }
 
     public void actionPerformed(ActionEvent e) {
-        System.out.println("Action Performed run");
-        return;
+        JButton clickedButton = (JButton) e.getSource();
+        String coordinates = clickedButton.getActionCommand();
+        System.out.println("Button Clicked at " + coordinates);
+
+        if(clickedButton.getText().isEmpty()){
+            clickedButton.setText("X");
+            clickedButton.setBackground(Color.BLUE);
+            clickedButton.setOpaque(true);
+        }
+        else {
+            clickedButton.setText("");
+            clickedButton.setBackground(Color.WHITE);
+        }
     }
 
     public void itemStateChanged(ItemEvent e) {
         if (e.getStateChange() == ItemEvent.SELECTED) {
             System.out.println("Checked!");
-            
+
         } else {
             System.out.println("Unchecked!");
         }
