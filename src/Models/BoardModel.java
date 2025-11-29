@@ -12,6 +12,14 @@ public class BoardModel {
     private int boardColumns;
     private int boardRows;
 
+    public int getBoardColumns(){
+        return boardColumns;
+    }
+
+    public int getBoardRows(){
+        return boardRows;
+    }
+
     public BoardModel(){
         boardColumns = 9;
         boardRows = 9;
@@ -76,6 +84,7 @@ public class BoardModel {
                 return "?";
         }
     }
+
 
 
 }
