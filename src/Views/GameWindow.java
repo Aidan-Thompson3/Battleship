@@ -67,6 +67,7 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
         JPanel controlPanel = new JPanel();
         JButton horizontalBtn = new JButton("Horizontal");
         JButton verticalBtn = new JButton("Vertical");
+        JButton placeShipBtn = new JButton("Place Ship");
 
         horizontalBtn.addActionListener(e -> {
             selectedOrientation = ShipModel.Orientation.HORIZONTAL;
@@ -78,10 +79,20 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
             System.out.println("Orientation set to VERTICAL");
         });
 
+        placeShipBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("Ship placed");
+            }
+        });
+
+
+
         controlPanel.add(new JLabel("Orientation:"));
         controlPanel.add(horizontalBtn);
         controlPanel.add(verticalBtn);
         add(controlPanel, BorderLayout.SOUTH);
+        add(placeShipBtn,BorderLayout.EAST);
 
     }
 }

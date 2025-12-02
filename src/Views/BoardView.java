@@ -47,7 +47,7 @@ class BoardViewPanel extends JPanel implements ActionListener, ItemListener{
             rowLabel.setFont(new Font("Arial", Font.BOLD, 12));
             add(rowLabel);
 
-            // Add radio buttons for this row
+            // Add  JButtons for this row
             for(int col = 0; col < 10; col++){
                 JButton button = new JButton();
                 button.setOpaque(true);
@@ -57,8 +57,6 @@ class BoardViewPanel extends JPanel implements ActionListener, ItemListener{
                 add(button);
             }
         }
-
-
 
     }
 
