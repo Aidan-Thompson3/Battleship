@@ -1,5 +1,7 @@
 package Views;
 
+import Controllers.GameController;
+import Models.CoordinatesModel;
 import Models.ShipModel;
 
 import java.awt.*;
@@ -7,6 +9,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemListener;
 import java.awt.event.ItemEvent;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.*;
 
 public class GameWindow {
@@ -25,6 +29,7 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
     private BorderLayout layout;
     private GridLayout gridLayout;
     private BoardViewPanel boardViewPanel;
+    private GameController gameController;
 
     private JButton moveButton = new JButton("Taken Pieces 1");
     private JButton moveButton2 = new JButton("Move2");
@@ -56,6 +61,7 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
         layout = new BorderLayout( 5, 5 );
         setLayout( layout );
         boardViewPanel = new BoardViewPanel();
+        gameController = new GameController();
 
         add(boardViewPanel, BorderLayout.CENTER);
 
@@ -82,11 +88,35 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
         placeShipBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("Ship placed");
+                if (boardViewPanel.selectedCoordinates.isEmpty()) {
+                    System.out.println("No coordinates selected! Click on cells to select them first.");
+                    return;
+                }
+
+                // Make a copy of selected coordinates before placing
+                List<CoordinatesModel> coordinatesToPlace = new ArrayList<>(boardViewPanel.selectedCoordinates);
+
+                boolean success = gameController.placeShip(coordinatesToPlace);
+                if (success) {
+                    System.out.println("Ship placed successfully!");
+
+                    // Mark the placed ship cells permanently
+                    boardViewPanel.markPlacedShip(coordinatesToPlace);
+
+                    // Clear temporary selection
+                    boardViewPanel.clearSelection();
+
+                    gameController.printPlayerShips();
+
+                    // Show progress
+                    int shipsPlaced = gameController.getCurrentPlayer().getShips().size();
+                    int requiredShips = gameController.getCurrentPlayer().getRequiredShips();
+                    System.out.println("Ships placed: " + shipsPlaced + "/" + requiredShips);
+                } else {
+                    System.out.println("Failed to place ship - invalid placement!");
+                }
             }
         });
-
-
 
         controlPanel.add(new JLabel("Orientation:"));
         controlPanel.add(horizontalBtn);

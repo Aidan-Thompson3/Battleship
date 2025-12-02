@@ -9,26 +9,26 @@ public class PlayerModel {
     public BoardModel playerBoard;
     public BoardModel opponentBoard;
 
-    List<ShipModel> ships = new ArrayList<>();
+    public List<ShipModel> ships = new ArrayList<>();
+    private static final int REQUIRED_SHIPS = 5; // Require 5 ships to be placed
 
     public PlayerModel(){
-        ships.add(new ShipModel(ShipModel.Orientation.VERTICAL,0,0, 2));
-        ships.add(new ShipModel(ShipModel.Orientation.VERTICAL,1,6,3 ));
-        ships.add(new ShipModel(ShipModel.Orientation.VERTICAL,3,5, 3));
-        ships.add(new ShipModel(ShipModel.Orientation.VERTICAL,2,3, 5));
-        //ships.add(new ShipModel(ShipModel.Orientation.VERTICAL,5, 5, 5);
+
 
         playerBoard = new BoardModel();
         opponentBoard = new BoardModel();
     }
 
+    public List<ShipModel> getShips() {
+        return ships;
+    }
+
+    public int getRequiredShips() {
+        return REQUIRED_SHIPS;
+    }
+
     public boolean allShipsPlaced(){
-        for(int i = 0; i<ships.size(); i++){
-            if(ships.get(i).placed == false){
-                return false;
-            }
-        }
-        return true;
+        return ships.size() >= REQUIRED_SHIPS;
     }
 
     private boolean canPlaceShipHere(List<int[]> cells) {
@@ -40,7 +40,6 @@ public class PlayerModel {
             if (row < 0 || row >= 10 || col < 0 || col >= 10) {
                 return false;
             }
-
             // Check if cell is empty
             if (playerBoard.getCellState(row, col) != BoardModel.CellState.EMPTY) {
                 return false;
@@ -49,12 +48,13 @@ public class PlayerModel {
         return true;  // All cells are valid and empty
     }
 
-    public boolean placeShip(int row, int col, ShipModel.Orientation orientation, int length){
-        ShipModel ship = new ShipModel(orientation, row, col, length);
-        ship.length = length;
-        ship.Row = row;
-        ship.Column = col;
+    public boolean placeShip(List<CoordinatesModel> positions){
+        if (positions == null || positions.isEmpty()) {
+            System.out.println("Cannot place ship: No coordinates selected");
+            return false;
+        }
 
+        ShipModel ship = new ShipModel(positions);
         if (!isValidPlacement(ship)) {
             return false;
         }
@@ -62,49 +62,38 @@ public class PlayerModel {
 
         // Add to fleet
         ships.add(ship);
-        ship.placed = true;
+        ship.setPlaced(true);
 
         return true;
     }
 
     public boolean isValidPlacement(ShipModel ship){
-        for (int i = 0; i < ship.length; i++) {
-            int row, col;
+        // Check each position in the ship
+        for (CoordinatesModel position : ship.getPositions()) {
+            int row = position.getxCor();
+            int col = position.getyCor();
 
-            if (ship.orientation == ShipModel.Orientation.HORIZONTAL) {
-                row = ship.Row;
-                col = ship.Column + i;  // Extends to the right
-            } else {
-                row = ship.Row + i;
-                col = ship.Column;
-            }
-
-            //ship is within bounds
+            // Check if position is within bounds
             if (row < 0 || row >= playerBoard.getBoardRows() || col < 0 || col >= playerBoard.getBoardColumns()) {
+                System.out.println("Invalid: Position (" + row + ", " + col + ") is out of bounds. Board is " + playerBoard.getBoardRows() + "x" + playerBoard.getBoardColumns());
                 return false;
             }
 
-
+            // Check if cell is empty
             if (playerBoard.getCellState(row, col) != BoardModel.CellState.EMPTY) {
+                System.out.println("Invalid: Position (" + row + ", " + col + ") is already occupied");
                 return false;
             }
         }
         return true;
     }
+
+
+
     public void markShipOnBoard(ShipModel ship){
-        for (int i = 0; i < ship.length; i++) {
-            int row, col;
-
-            // Calculate which cell to mark based on orientation
-            if (ship.orientation == ShipModel.Orientation.HORIZONTAL) {
-                row = ship.Row;
-                col = ship.Column + i;
-            } else {
-                row = ship.Row + i;
-                col = ship.Column;
-            }
-
-
+        for (CoordinatesModel position : ship.getPositions()) {
+            int row = position.getxCor();
+            int col = position.getyCor();
             playerBoard.setCellState(row, col, BoardModel.CellState.SHIP);
         }
     }
@@ -126,9 +115,4 @@ public class PlayerModel {
             return null;
         }
     }
-
-
-
-
 }
-

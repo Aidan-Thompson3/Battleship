@@ -1,6 +1,8 @@
 package Controllers;
+import Models.CoordinatesModel;
 import Models.PlayerModel;
 import Models.ShipModel;
+import java.util.List;
 
 
 public class GameController {
@@ -36,7 +38,7 @@ public class GameController {
         return player1.allShipsPlaced() && player2.allShipsPlaced();
     }
 
-    public boolean placeShip(int row, int col, ShipModel.Orientation orientation, int length) {
+    public boolean placeShip(List<CoordinatesModel> positions) {
         //GameController checks "Are we in SETUP phase?"
         //GameController checks continues if currentPhase is the setup phase
 
@@ -46,7 +48,7 @@ public class GameController {
 
         // Try to place it
         //Delegates to PlayerModel for validation of ship placement
-        boolean success = currentPlayer.placeShip(row, col, orientation, length);
+        boolean success = currentPlayer.placeShip(positions);
 
         if (success) {
             if (currentPlayer.allShipsPlaced()) {
@@ -55,6 +57,7 @@ public class GameController {
                     currentPlayer = player2;
                 } else if (player1.allShipsPlaced() && player2.allShipsPlaced()) {
                     // Both done - start battle
+                    System.out.println("battle starting");
                     startBattle();
                 }
             }
@@ -68,6 +71,25 @@ public class GameController {
             currentPlayer = player1;
             System.out.println("Battle begins! Player 1 attacks first.");
         }
+    }
+
+    public void printPlayerShips(){
+        String playerName = (currentPlayer == player1) ? "Player 1" : "Player 2";
+        System.out.println("\n=== " + playerName + "'s Ships ===");
+        System.out.println("Total ships placed: " + currentPlayer.ships.size());
+
+        for (int i = 0; i < currentPlayer.ships.size(); i++) {
+        ShipModel ship = currentPlayer.ships.get(i);
+            System.out.println("\nShip #" + (i + 1) + ":");
+            System.out.println("  Length: " + ship.length);
+            System.out.println("  Orientation: " + ship.orientation);
+            System.out.println("  Positions:");
+            for (CoordinatesModel pos : ship.positions) {
+                System.out.println("    - Row: " + pos.getxCor() + ", Col: " + pos.getyCor());
+                            }
+                    }
+               System.out.println("\n=== " + playerName + "'s Board ===");
+               currentPlayer.playerBoard.printBoard();
     }
 
     //Getters

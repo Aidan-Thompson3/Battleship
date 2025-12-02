@@ -21,11 +21,11 @@ public class BoardModel {
     }
 
     public BoardModel(){
-        boardColumns = 9;
-        boardRows = 9;
-        boardArray = new CellState[boardColumns][boardRows];
-        for (int col = 0; col < boardColumns; col++) {
-            for (int row = 0; row < boardColumns; row++) {
+        boardColumns = 10;
+        boardRows = 10;
+        boardArray = new CellState[boardRows][boardColumns];
+        for (int row = 0; row < boardRows; row++) {
+            for (int col = 0; col < boardColumns; col++) {
                 boardArray[row][col] = CellState.EMPTY;
             }
         }
@@ -39,8 +39,8 @@ public class BoardModel {
     }
 
     public boolean allCellsAre(CellState expectedState){
-        for (int col= 0; col < boardColumns; col++) {
-            for (int row = 0; row < boardColumns; row++) {
+        for (int row = 0; row < boardRows; row++) {
+            for (int col = 0; col < boardColumns; col++) {
                 if(boardArray[row][col] != expectedState){
                     return false;
                 }
@@ -54,7 +54,7 @@ public class BoardModel {
             System.out.print(col + " ");
         }
         System.out.println();
-        System.out.println("   --------------------");
+        System.out.println("   ----------------------");
 
         for (int row = 0; row < boardRows; row++) {
             System.out.print(row + " | ");
@@ -64,7 +64,7 @@ public class BoardModel {
             }
             System.out.println("|");
         }
-        System.out.println("   --------------------");
+        System.out.println("   ----------------------");
 
         // Print legend
         System.out.println("\n   Legend: · = Empty  S = Ship  X = Hit  O = Miss");
