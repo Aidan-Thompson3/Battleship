@@ -1,37 +1,61 @@
 package Models;
 
-import java.util.Random;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public class ShipModel {
 
-    public enum Orientation{
+    public enum Orientation {
         HORIZONTAL,
         VERTICAL
     }
+
     public Orientation orientation;
     public List<CoordinatesModel> positions;
-    private Set<CoordinatesModel> hits;
     public int length;
     protected boolean placed;
 
-    public ShipModel(List<CoordinatesModel> positions){
-        this.positions = positions;
-        this.length = positions.size();
+    public ShipModel(List<CoordinatesModel> positions) {
+        if (positions == null || positions.isEmpty()) {
+            throw new IllegalArgumentException("Ship must have at least one coordinate");
+        }
+        // Defensive copy
+        this.positions = new ArrayList<>(positions);
+        this.length = this.positions.size();
+        this.orientation = deduceOrientation(this.positions);
         this.placed = false;
+    }
 
-        // Determine orientation based on positions (if they form a line)
-        if (positions.size() >= 2) {
-            CoordinatesModel first = positions.get(0);
-            CoordinatesModel second = positions.get(1);
+    private Orientation deduceOrientation(List<CoordinatesModel> positions) {
+        if (positions.size() == 1) {
+            // A single–cell ship can be treated as horizontal by default
+            return Orientation.HORIZONTAL;
+        }
 
-            if (first.getxCor() == second.getxCor()) {
-                this.orientation = Orientation.VERTICAL;
-            } else {
-                this.orientation = Orientation.HORIZONTAL;
+        boolean sameRow = true;
+        boolean sameCol = true;
+
+        int baseRow = positions.get(0).getxCor();
+        int baseCol = positions.get(0).getyCor();
+
+        for (CoordinatesModel pos : positions) {
+            if (pos.getxCor() != baseRow) {
+                sameRow = false;
             }
+            if (pos.getyCor() != baseCol) {
+                sameCol = false;
+            }
+        }
+
+        if (sameRow && !sameCol) {
+            return Orientation.HORIZONTAL;
+        } else if (sameCol && !sameRow) {
+            return Orientation.VERTICAL;
+        } else if (sameRow && sameCol) {
+            // All cells are the same – treat as length-1 horizontal
+            return Orientation.HORIZONTAL;
+        } else {
+            throw new IllegalArgumentException("Ship coordinates must be in a straight line");
         }
     }
 
@@ -40,7 +64,7 @@ public class ShipModel {
     }
 
     public List<CoordinatesModel> getPositions() {
-        return positions;  // Returns the list of all coordinates the ship occupies
+        return positions;
     }
 
     public int getLength() {

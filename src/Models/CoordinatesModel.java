@@ -4,22 +4,20 @@ public class CoordinatesModel {
     private int xCor;
     private int yCor;
 
-
-    public CoordinatesModel(){
-        xCor = -1;
-        yCor = -1;
+    public CoordinatesModel() {
+        this(-1, -1);
     }
 
-    public CoordinatesModel(int x, int y){
-        xCor = x;
-        yCor = y;
+    public CoordinatesModel(int x, int y) {
+        this.xCor = x;
+        this.yCor = y;
     }
 
-    public int getxCor(){
+    public int getxCor() {
         return xCor;
     }
 
-    public int getyCor(){
+    public int getyCor() {
         return yCor;
     }
 }
