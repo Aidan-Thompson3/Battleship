@@ -51,7 +51,8 @@ class AttackViewPanel extends JPanel {
         // Column headers (0–9)
         for (int col = 0; col < 10; col++) {
             JLabel colLabel = new JLabel(String.valueOf(col), SwingConstants.CENTER);
-            colLabel.setFont(new Font("Arial", Font.BOLD, 12));
+            colLabel.setFont(new Font("Arial", Font.BOLD, 14));
+            colLabel.setForeground(new Color(70, 130, 180));
             add(colLabel);
         }
 
@@ -59,15 +60,18 @@ class AttackViewPanel extends JPanel {
         for (int row = 0; row < 10; row++) {
             // Row label on the left
             JLabel rowLabel = new JLabel(ROW_LABELS[row], SwingConstants.CENTER);
-            rowLabel.setFont(new Font("Arial", Font.BOLD, 12));
+            rowLabel.setFont(new Font("Arial", Font.BOLD, 14));
+            rowLabel.setForeground(new Color(70, 130, 180));
             add(rowLabel);
 
             // Ten buttons for the row
             for (int col = 0; col < 10; col++) {
                 JButton button = new JButton();
                 button.setOpaque(true);
-                button.setBackground(Color.LIGHT_GRAY);
-                button.setActionCommand(row + "," + col);
+                button.setBackground(new Color(135, 206, 235)); // Sky blue for water
+                button.setBorder(BorderFactory.createLineBorder(new Color(30, 144, 255), 2));
+                button.setFocusPainted(false);
+                button.setFont(new Font("Arial", Font.BOLD, 20));
 
                 final int r = row;
                 final int c = col;
@@ -99,24 +103,35 @@ class AttackViewPanel extends JPanel {
 
         switch (state) {
             case EMPTY:
-                button.setBackground(Color.LIGHT_GRAY);
+                // Untargeted water - sky blue
+                button.setBackground(new Color(135, 206, 235));
                 button.setText("");
                 button.setEnabled(true);
+                button.setBorder(BorderFactory.createLineBorder(new Color(30, 144, 255), 2));
                 break;
             case MISS:
-                button.setBackground(Color.BLUE);
-                button.setText("O");
+                // White peg for miss
+                button.setBackground(Color.WHITE);
+                button.setForeground(new Color(100, 100, 100));
+                button.setText("●");
                 button.setEnabled(false);
+                button.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
                 break;
             case HIT:
-                button.setBackground(Color.RED);
-                button.setText("X");
+                // Red peg for hit
+                button.setBackground(new Color(220, 20, 60));
+                button.setForeground(Color.WHITE);
+                button.setText("✖");
                 button.setEnabled(false);
+                button.setBorder(BorderFactory.createLineBorder(new Color(139, 0, 0), 3));
                 break;
             case SUNK:
-                button.setBackground(Color.DARK_GRAY);
-                button.setText("X");
+                // Dark red for sunk ship
+                button.setBackground(new Color(139, 0, 0));
+                button.setForeground(Color.WHITE);
+                button.setText("✖");
                 button.setEnabled(false);
+                button.setBorder(BorderFactory.createLineBorder(Color.BLACK, 3));
                 break;
             default:
                 break;
