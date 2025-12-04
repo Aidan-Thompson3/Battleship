@@ -152,12 +152,21 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
                 add(boardViewPanel, BorderLayout.CENTER);
             }
 
+            // Check if battle phase has started
             if (gameController.getCurrentPhase() == GameController.GamePhase.PLAYER1_TURN) {
                 JOptionPane.showMessageDialog(this,
                         "Both players have placed their ships.\n"
-                                + "Battle phase has started (attack UI not wired in this panel).",
+                                + "Starting battle phase!",
                         "Setup Complete",
                         JOptionPane.INFORMATION_MESSAGE);
+
+                // Close setup window and launch battle window
+                Window window = SwingUtilities.getWindowAncestor(this);
+                if (window != null) {
+                    window.dispose();
+                }
+
+                BattleWindow.launchBattle(gameController);
             }
         } else {
             JOptionPane.showMessageDialog(this,
