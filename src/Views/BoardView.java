@@ -218,12 +218,7 @@ class BoardViewPanel extends JPanel implements ActionListener, ItemListener{
         }
     }
 
-    /**
-     * Used in battle to render the board.
-     * MISS: blue circle
-     * HIT:  red circle
-     * SUNK: darker red circle
-     */
+
     public void showBoardFromModel(BoardModel model, boolean hideShips) {
         for (int row = 0; row < 10; row++) {
             for (int col = 0; col < 10; col++) {
@@ -292,9 +287,7 @@ class BoardViewPanel extends JPanel implements ActionListener, ItemListener{
     }
 }
 
-/**
- * Used by GameWindow when the board is in BATTLE_TARGET mode.
- */
+
 interface AttackListener {
     void onAttack(int row, int col);
 }

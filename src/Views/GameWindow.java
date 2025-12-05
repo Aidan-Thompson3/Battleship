@@ -920,10 +920,6 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
         timer.start();
     }
 
-    /**
-     * Checks if a ship was sunk at the given coordinates.
-     * Returns true if the ship at this position is now completely destroyed.
-     */
     private boolean checkIfShipSunk(PlayerModel defender, int hitRow, int hitCol) {
         // Find the ship at this position
         for (var ship : defender.getShips()) {
@@ -976,9 +972,7 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
         return (p == gameController.getPlayer1()) ? "Player 1" : "Player 2";
     }
 
-    /**
-     * Restarts the game by showing theme selection and resetting everything
-     */
+    //Restarts game
     private void restartGame() {
         // Get the parent frame
         JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
@@ -1032,11 +1026,7 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
         }).start();
     }
 
-    /**
-     * Attempts to play a sound file from resources.
-     * @param resourcePath Path to the sound file in resources (e.g., "/sounds/explosion.wav")
-     * @return true if sound was played successfully, false otherwise
-     */
+    //sound effects
     private boolean tryPlaySoundFile(String resourcePath) {
         try {
             java.net.URL soundURL = getClass().getResource(resourcePath);

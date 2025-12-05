@@ -72,12 +72,7 @@ public class GameController {
         }
     }
 
-    /**
-     * Perform an attack from the current player to the opposing player.
-     * This method DOES NOT switch turns; UI should call endTurn() after a delay.
-     *
-     * @return true if it was a hit, false otherwise.
-     */
+    //attack
     public boolean attack(int row, int col) {
         if (currentPhase != GamePhase.PLAYER1_TURN &&
                 currentPhase != GamePhase.PLAYER2_TURN) {
@@ -119,10 +114,7 @@ public class GameController {
         return hit;
     }
 
-    /**
-     * Called by the UI AFTER showing the result of the attack (e.g., after 1 second).
-     * Switches to the other player if the game is not over.
-     */
+
     public void endTurn() {
         if (currentPhase == GamePhase.GAME_OVER) {
             return;
