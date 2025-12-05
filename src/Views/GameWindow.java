@@ -4,9 +4,7 @@ import Controllers.GameController;
 import Models.CoordinatesModel;
 import Models.PlayerModel;
 
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
+import javax.sound.sampled.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -15,12 +13,20 @@ import java.awt.event.ItemEvent;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
+import javax.swing.border.*;
 
 public class GameWindow {
     public static void main(String args[]){
-        JFrame frame = new JFrame("Battleship");
+        // Set look and feel for better appearance
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        JFrame frame = new JFrame("⚓ Battleship Game");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(900,700);
+        frame.setSize(1000, 750);
         GameWindowPanel gwp = new GameWindowPanel();
         frame.add(gwp);
         frame.setLocationRelativeTo(null);
@@ -36,6 +42,10 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
     private JPanel setupControlPanel;
     private JButton placeShipBtn;
 
+    // Ship indicator labels
+    private JLabel shipNameLabel;
+    private JLabel shipLengthLabel;
+
     private JPanel battlePanel;
     private BoardViewPanel playerBoardPanel;
     private BoardViewPanel targetBoardPanel;
@@ -43,90 +53,240 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
     private JLabel phaseLabel = new JLabel();
     private JLabel currentPlayerLabel = new JLabel();
     private JLabel shipsPlacedLabel = new JLabel();
-    private JLabel messageLabel =
-            new JLabel("Place your ships by selecting cells and clicking 'Place Ship'.");
+    private JLabel messageLabel = new JLabel("Select cells on the board and click 'Place Ship' to position your fleet.");
 
     private final int[] shipLengths = {5, 4, 3, 3, 2};
+    private final String[] shipNames = {"Carrier (5)", "Battleship (4)", "Cruiser (3)", "Submarine (3)", "Destroyer (2)"};
     private int currentShipIndex = 0;
 
     private boolean attackAnimating = false;
 
+    // Color scheme
+    private static final Color NAVY_BLUE = new Color(25, 55, 109);
+    private static final Color OCEAN_BLUE = new Color(64, 145, 191);
+    private static final Color LIGHT_BLUE = new Color(173, 216, 230);
+    private static final Color SAND = new Color(255, 248, 220);
+    private static final Color DARK_RED = new Color(139, 0, 0);
+    private static final Color SUCCESS_GREEN = new Color(46, 125, 50);
+
     GameWindowPanel(){
-        setLayout(new BorderLayout(5,5));
+        setLayout(new BorderLayout(10, 10));
+        setBackground(SAND);
+        setBorder(new EmptyBorder(15, 15, 15, 15));
 
         gameController = new GameController();
 
-        JPanel statusPanel = new JPanel(new GridLayout(2, 1));
-        JPanel topRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topRow.add(new JLabel("Phase: "));
-        topRow.add(phaseLabel);
-        topRow.add(Box.createHorizontalStrut(20));
-        topRow.add(new JLabel("Current: "));
-        topRow.add(currentPlayerLabel);
-        topRow.add(Box.createHorizontalStrut(20));
-        topRow.add(new JLabel("Ships placed: "));
-        topRow.add(shipsPlacedLabel);
-
-        JPanel bottomRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        bottomRow.add(messageLabel);
-
-        statusPanel.add(topRow);
-        statusPanel.add(bottomRow);
+        // Create status panel with modern styling
+        JPanel statusPanel = createStatusPanel();
         add(statusPanel, BorderLayout.NORTH);
 
+        // Setup board panel
         setupBoardPanel = new BoardViewPanel();
         setupBoardPanel.setMode(BoardViewPanel.BoardMode.SETUP_SELECTION);
+        setupBoardPanel.setBorder(createTitledBorder("Your Fleet Placement"));
         add(setupBoardPanel, BorderLayout.CENTER);
 
-        setupControlPanel = new JPanel();
-        JButton horizontalBtn = new JButton("Horizontal (visual only)");
-        JButton verticalBtn = new JButton("Vertical (visual only)");
-        placeShipBtn = new JButton("Place Ship");
-
-        horizontalBtn.addActionListener(e ->
-                messageLabel.setText("Using horizontal-style selection (contiguous in a row)."));
-
-        verticalBtn.addActionListener(e ->
-                messageLabel.setText("Using vertical-style selection (contiguous in a column)."));
-
-        placeShipBtn.addActionListener(e -> onPlaceShip());
-
-        setupControlPanel.add(horizontalBtn);
-        setupControlPanel.add(verticalBtn);
-        setupControlPanel.add(placeShipBtn);
-
+        // Setup control panel
+        setupControlPanel = createSetupControlPanel();
         add(setupControlPanel, BorderLayout.SOUTH);
 
         updateStatusLabels();
+        updateShipInstructions();
+    }
+
+    private JPanel createStatusPanel() {
+        JPanel statusPanel = new JPanel(new BorderLayout(10, 10));
+        statusPanel.setBackground(NAVY_BLUE);
+        statusPanel.setBorder(new CompoundBorder(
+                new LineBorder(OCEAN_BLUE, 2),
+                new EmptyBorder(15, 20, 15, 20)
+        ));
+
+        // Top info row
+        JPanel topRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 5));
+        topRow.setBackground(NAVY_BLUE);
+
+        addStatusLabel(topRow, "Phase:", phaseLabel);
+        addStatusLabel(topRow, "Current Player:", currentPlayerLabel);
+        addStatusLabel(topRow, "Ships Placed:", shipsPlacedLabel);
+
+        // Message row
+        JPanel bottomRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        bottomRow.setBackground(NAVY_BLUE);
+
+        messageLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        messageLabel.setForeground(Color.WHITE);
+        bottomRow.add(messageLabel);
+
+        statusPanel.add(topRow, BorderLayout.NORTH);
+        statusPanel.add(bottomRow, BorderLayout.CENTER);
+
+        return statusPanel;
+    }
+
+    private void addStatusLabel(JPanel panel, String labelText, JLabel valueLabel) {
+        JLabel label = new JLabel(labelText);
+        label.setFont(new Font("Arial", Font.BOLD, 13));
+        label.setForeground(LIGHT_BLUE);
+
+        valueLabel.setFont(new Font("Arial", Font.BOLD, 13));
+        valueLabel.setForeground(Color.WHITE);
+
+        panel.add(label);
+        panel.add(valueLabel);
+    }
+
+    private JPanel createSetupControlPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(SAND);
+        panel.setBorder(new EmptyBorder(10, 0, 0, 0));
+
+        // Ship indicator panel - shows current ship being placed
+        JPanel shipIndicatorPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        shipIndicatorPanel.setBackground(SAND);
+        shipIndicatorPanel.setBorder(new CompoundBorder(
+                new LineBorder(OCEAN_BLUE, 3),
+                new EmptyBorder(15, 20, 15, 20)
+        ));
+
+        JLabel currentShipLabel = new JLabel("📍 NOW PLACING:");
+        currentShipLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        currentShipLabel.setForeground(NAVY_BLUE);
+
+        shipNameLabel = new JLabel(shipNames[0].split(" \\(")[0]);
+        shipNameLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        shipNameLabel.setForeground(new Color(211, 47, 47));
+
+        shipLengthLabel = new JLabel("(Select " + shipLengths[0] + " cells)");
+        shipLengthLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        shipLengthLabel.setForeground(NAVY_BLUE);
+
+        shipIndicatorPanel.add(currentShipLabel);
+        shipIndicatorPanel.add(shipNameLabel);
+        shipIndicatorPanel.add(shipLengthLabel);
+
+        // Instructions panel
+        JPanel instructionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        instructionsPanel.setBackground(SAND);
+
+        JLabel instructionLabel = new JLabel("Click cells to select, then place your ship →");
+        instructionLabel.setFont(new Font("Arial", Font.ITALIC, 12));
+        instructionLabel.setForeground(NAVY_BLUE);
+        instructionsPanel.add(instructionLabel);
+
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        buttonPanel.setBackground(SAND);
+
+        placeShipBtn = new JButton("⚓ Place Ship");
+        styleButton(placeShipBtn, SUCCESS_GREEN);
+        placeShipBtn.addActionListener(e -> onPlaceShip());
+
+        JButton clearBtn = new JButton("✖ Clear Selection");
+        styleButton(clearBtn, new Color(211, 47, 47));
+        clearBtn.addActionListener(e -> {
+            setupBoardPanel.clearSelection();
+            messageLabel.setText("Selection cleared. Select cells for your next ship.");
+        });
+
+        JButton randomBtn = new JButton("🎲 Random Ship Placement");
+        styleButton(randomBtn, new Color(103, 58, 183)); // Purple color
+        randomBtn.addActionListener(e -> onRandomPlacement());
+
+        buttonPanel.add(placeShipBtn);
+        buttonPanel.add(clearBtn);
+        buttonPanel.add(randomBtn);
+
+        // Combine all panels
+        JPanel topSection = new JPanel(new BorderLayout(5, 5));
+        topSection.setBackground(SAND);
+        topSection.add(shipIndicatorPanel, BorderLayout.NORTH);
+        topSection.add(instructionsPanel, BorderLayout.CENTER);
+
+        panel.add(topSection, BorderLayout.NORTH);
+        panel.add(buttonPanel, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    private void styleButton(JButton button, Color bgColor) {
+        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setBackground(bgColor);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorder(new CompoundBorder(
+                new LineBorder(bgColor.darker(), 2),
+                new EmptyBorder(10, 20, 10, 20)
+        ));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+
+        // Hover effect
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(bgColor.brighter());
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(bgColor);
+            }
+        });
+    }
+
+    private TitledBorder createTitledBorder(String title) {
+        TitledBorder border = BorderFactory.createTitledBorder(
+                new LineBorder(OCEAN_BLUE, 2),
+                title,
+                TitledBorder.CENTER,
+                TitledBorder.TOP
+        );
+        border.setTitleFont(new Font("Arial", Font.BOLD, 16));
+        border.setTitleColor(NAVY_BLUE);
+        return border;
+    }
+
+    private void updateShipInstructions() {
+        if (currentShipIndex < shipNames.length) {
+            String shipName = shipNames[currentShipIndex];
+            messageLabel.setText("Place your " + shipName + " - select " +
+                    shipLengths[currentShipIndex] + " cells in a row or column.");
+
+            // Update the ship indicator panel
+            if (shipNameLabel != null) {
+                shipNameLabel.setText(shipName.split(" \\(")[0]); // Just the name without length
+                shipLengthLabel.setText("(Select " + shipLengths[currentShipIndex] + " cells)");
+            }
+        }
     }
 
     private void onPlaceShip() {
-        List<CoordinatesModel> selected =
-                new ArrayList<>(setupBoardPanel.selectedCoordinates);
+        List<CoordinatesModel> selected = new ArrayList<>(setupBoardPanel.selectedCoordinates);
         if (selected.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "No coordinates selected. Click on cells to select them first.",
+            showStyledDialog(
+                    "No cells selected. Click on cells to select them first.",
                     "No Selection",
-                    JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.WARNING_MESSAGE
+            );
             return;
         }
 
         if (currentShipIndex >= shipLengths.length) {
-            JOptionPane.showMessageDialog(this,
+            showStyledDialog(
                     "All ships for this player are already placed.",
                     "Fleet Complete",
-                    JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.INFORMATION_MESSAGE
+            );
             setupBoardPanel.clearSelection();
             return;
         }
 
         int requiredLength = shipLengths[currentShipIndex];
         if (selected.size() != requiredLength) {
-            JOptionPane.showMessageDialog(this,
+            showStyledDialog(
                     "You selected " + selected.size() + " cell(s).\n" +
-                            "Current ship length is " + requiredLength + ".",
+                            "The " + shipNames[currentShipIndex] + " requires exactly " + requiredLength + " cells.",
                     "Incorrect Ship Length",
-                    JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.ERROR_MESSAGE
+            );
             return;
         }
 
@@ -146,29 +306,42 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
             if (gameController.getCurrentPhase() == GameController.GamePhase.SETUP &&
                     gameController.getCurrentPlayer() != before) {
 
-                JOptionPane.showMessageDialog(this,
-                        "Finished placing ships for " + getPlayerName(before) +
-                                ". Hand the computer to the next player.",
-                        "Switch Player",
-                        JOptionPane.INFORMATION_MESSAGE);
+                showStyledDialog(
+                        "✓ Fleet complete for " + getPlayerName(before) + "!\n\n" +
+                                "Pass the device to " + getPlayerName(gameController.getCurrentPlayer()) + " to place their ships.",
+                        "Switch Players",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
 
                 currentShipIndex = 0;
 
                 remove(setupBoardPanel);
                 setupBoardPanel = new BoardViewPanel();
                 setupBoardPanel.setMode(BoardViewPanel.BoardMode.SETUP_SELECTION);
+                setupBoardPanel.setBorder(createTitledBorder("Your Fleet Placement"));
                 add(setupBoardPanel, BorderLayout.CENTER);
+
+                // Recreate setup control panel for new player
+                remove(setupControlPanel);
+                setupControlPanel = createSetupControlPanel();
+                add(setupControlPanel, BorderLayout.SOUTH);
             }
 
             if (gameController.getCurrentPhase() == GameController.GamePhase.PLAYER1_TURN) {
                 enterBattleMode();
+            } else {
+                updateShipInstructions();
             }
         } else {
-            JOptionPane.showMessageDialog(this,
-                    "Invalid ship placement. Make sure the cells are contiguous, inside the board, " +
-                            "and do not overlap existing ships.",
+            showStyledDialog(
+                    "Invalid ship placement!\n\n" +
+                            "• Cells must be in a straight line (horizontal or vertical)\n" +
+                            "• Cells must be adjacent (no gaps)\n" +
+                            "• Cannot overlap with existing ships\n" +
+                            "• Must be within the board boundaries",
                     "Invalid Placement",
-                    JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.ERROR_MESSAGE
+            );
         }
 
         updateStatusLabels();
@@ -176,10 +349,162 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
         repaint();
     }
 
+    /**
+     * Randomly places all remaining ships for the current player.
+     */
+    private void onRandomPlacement() {
+        setupBoardPanel.clearSelection();
+
+        PlayerModel currentPlayer = gameController.getCurrentPlayer();
+        int shipsToPlace = 5 - currentPlayer.getShips().size();
+
+        if (shipsToPlace == 0) {
+            showStyledDialog(
+                    "All ships are already placed!",
+                    "Fleet Complete",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+            return;
+        }
+
+        messageLabel.setText("🎲 Randomly placing " + shipsToPlace + " ship(s)...");
+
+        // Use SwingWorker to show progress without freezing UI
+        SwingWorker<Void, String> worker = new SwingWorker<Void, String>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                java.util.Random random = new java.util.Random();
+
+                while (currentShipIndex < shipLengths.length) {
+                    int shipLength = shipLengths[currentShipIndex];
+                    boolean placed = false;
+                    int attempts = 0;
+                    int maxAttempts = 1000;
+
+                    while (!placed && attempts < maxAttempts) {
+                        attempts++;
+
+                        // Random orientation (0 = horizontal, 1 = vertical)
+                        boolean horizontal = random.nextBoolean();
+
+                        // Random start position
+                        int startRow, startCol;
+                        if (horizontal) {
+                            startRow = random.nextInt(10);
+                            startCol = random.nextInt(10 - shipLength + 1);
+                        } else {
+                            startRow = random.nextInt(10 - shipLength + 1);
+                            startCol = random.nextInt(10);
+                        }
+
+                        // Generate positions
+                        List<CoordinatesModel> positions = new ArrayList<>();
+                        for (int i = 0; i < shipLength; i++) {
+                            if (horizontal) {
+                                positions.add(new CoordinatesModel(startRow, startCol + i));
+                            } else {
+                                positions.add(new CoordinatesModel(startRow + i, startCol));
+                            }
+                        }
+
+                        // Try to place the ship
+                        placed = gameController.placeShip(positions);
+
+                        if (placed) {
+                            // Update UI on EDT
+                            final List<CoordinatesModel> finalPositions = new ArrayList<>(positions);
+                            javax.swing.SwingUtilities.invokeLater(() -> {
+                                setupBoardPanel.markPlacedShip(finalPositions);
+                                currentShipIndex++;
+                                updateShipInstructions();
+                                int shipsPlaced = currentPlayer.getShips().size();
+                                shipsPlacedLabel.setText(shipsPlaced + "/5");
+                            });
+
+                            // Small delay to show placement animation
+                            Thread.sleep(300);
+                        }
+                    }
+
+                    if (!placed) {
+                        publish("Failed to place ship after " + maxAttempts + " attempts. Try clearing the board.");
+                        return null;
+                    }
+                }
+
+                return null;
+            }
+
+            @Override
+            protected void process(java.util.List<String> chunks) {
+                for (String msg : chunks) {
+                    messageLabel.setText(msg);
+                }
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get(); // Check for exceptions
+
+                    if (currentPlayer.allShipsPlaced()) {
+                        messageLabel.setText("✓ All ships randomly placed!");
+
+                        // Check if we need to switch players or start battle
+                        if (gameController.getCurrentPhase() == GameController.GamePhase.SETUP &&
+                                gameController.getCurrentPlayer() != currentPlayer) {
+
+                            Timer switchTimer = new Timer(1000, e -> {
+                                showStyledDialog(
+                                        "✓ Fleet complete for " + getPlayerName(currentPlayer) + "!\n\n" +
+                                                "Pass the device to " + getPlayerName(gameController.getCurrentPlayer()) + " to place their ships.",
+                                        "Switch Players",
+                                        JOptionPane.INFORMATION_MESSAGE
+                                );
+
+                                currentShipIndex = 0;
+
+                                remove(setupBoardPanel);
+                                setupBoardPanel = new BoardViewPanel();
+                                setupBoardPanel.setMode(BoardViewPanel.BoardMode.SETUP_SELECTION);
+                                setupBoardPanel.setBorder(createTitledBorder("Your Fleet Placement"));
+                                add(setupBoardPanel, BorderLayout.CENTER);
+
+                                remove(setupControlPanel);
+                                setupControlPanel = createSetupControlPanel();
+                                add(setupControlPanel, BorderLayout.SOUTH);
+
+                                updateStatusLabels();
+                                revalidate();
+                                repaint();
+                            });
+                            switchTimer.setRepeats(false);
+                            switchTimer.start();
+
+                        } else if (gameController.getCurrentPhase() == GameController.GamePhase.PLAYER1_TURN) {
+                            Timer battleTimer = new Timer(1000, e -> {
+                                enterBattleMode();
+                            });
+                            battleTimer.setRepeats(false);
+                            battleTimer.start();
+                        }
+                    }
+                } catch (Exception e) {
+                    messageLabel.setText("❌ Error during random placement: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        worker.execute();
+    }
+
     private void enterBattleMode() {
         remove(setupBoardPanel);
 
-        battlePanel = new JPanel(new GridLayout(1, 2, 10, 10));
+        battlePanel = new JPanel(new GridLayout(1, 2, 20, 10));
+        battlePanel.setBackground(SAND);
+
         playerBoardPanel = new BoardViewPanel();
         targetBoardPanel = new BoardViewPanel();
 
@@ -196,29 +521,32 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
             }
         });
 
+        playerBoardPanel.setBorder(createTitledBorder("⚓ Your Fleet"));
+        targetBoardPanel.setBorder(createTitledBorder("🎯 Enemy Waters"));
+
         battlePanel.add(playerBoardPanel);
         battlePanel.add(targetBoardPanel);
 
         add(battlePanel, BorderLayout.CENTER);
 
         setupControlPanel.setVisible(false);
-        placeShipBtn.setVisible(false);
 
-        messageLabel.setText("Battle started! " +
-                getPlayerName(gameController.getCurrentPlayer()) +
-                " attacks first. Click on the right board to fire.");
+        messageLabel.setText("⚔️ Battle started! " + getPlayerName(gameController.getCurrentPlayer()) +
+                " fires first. Click the enemy board to attack!");
 
         refreshBattleBoards();
 
         revalidate();
         repaint();
 
-        JOptionPane.showMessageDialog(this,
-                "Both players have placed their ships.\n" +
-                        "Battle phase has started!\n" +
-                        "Current turn: " + getPlayerName(gameController.getCurrentPlayer()),
-                "Battle Start",
-                JOptionPane.INFORMATION_MESSAGE);
+        showStyledDialog(
+                "⚔️ Both fleets are deployed!\n\n" +
+                        "The battle begins now.\n" +
+                        "Current turn: " + getPlayerName(gameController.getCurrentPlayer()) + "\n\n" +
+                        "Click on the right board (Enemy Waters) to fire!",
+                "⚓ Battle Stations!",
+                JOptionPane.INFORMATION_MESSAGE
+        );
     }
 
     private void handleAttack(int row, int col) {
@@ -233,21 +561,50 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
 
         boolean hit = gameController.attack(row, col);
 
+        // Check if a ship was sunk
+        PlayerModel defender = (gameController.getCurrentPlayer() == gameController.getPlayer1())
+                ? gameController.getPlayer2()
+                : gameController.getPlayer1();
+        boolean shipSunk = checkIfShipSunk(defender, row, col);
+
         if (hit) {
             playExplosionSound();
-            messageLabel.setText("HIT at (" + row + ", " + col + ")! You go again.");
+
+            if (shipSunk) {
+                playShipSunkSound();
+                messageLabel.setText("💥💥💥 SHIP SUNK at (" + (char)('A' + row) + ", " + (col + 1) + ")! 🚢⚓ Keep firing!");
+
+                // Show dramatic sunk notification after a short delay
+                Timer sunkTimer = new Timer(800, e -> {
+                    showStyledDialog(
+                            "⚓💥⚓\n\n" +
+                                    "ENEMY SHIP DESTROYED!\n\n" +
+                                    "You've sunk an enemy vessel!\n" +
+                                    "Continue the attack!",
+                            "🚢 SHIP SUNK! 🚢",
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
+                });
+                sunkTimer.setRepeats(false);
+                sunkTimer.start();
+            } else {
+                messageLabel.setText("💥 DIRECT HIT at (" + (char)('A' + row) + ", " + (col + 1) + ")! Fire again!");
+            }
         } else {
-            messageLabel.setText("Miss or already targeted at (" + row + ", " + col + ").");
+            messageLabel.setText("💦 Miss at (" + (char)('A' + row) + ", " + (col + 1) + "). Turn ending...");
         }
 
         refreshBattleBoards();
 
         if (gameController.getCurrentPhase() == GameController.GamePhase.GAME_OVER) {
             String winner = getPlayerName(gameController.getCurrentPlayer());
-            JOptionPane.showMessageDialog(this,
-                    winner + " wins! All enemy ships have been sunk.",
-                    "Game Over",
-                    JOptionPane.INFORMATION_MESSAGE);
+            showStyledDialog(
+                    "🏆 " + winner + " WINS!\n\n" +
+                            "All enemy ships have been destroyed!\n" +
+                            "Victory is yours!",
+                    "🎊 Game Over",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
             attackAnimating = false;
             updateStatusLabels();
             return;
@@ -259,7 +616,7 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
             return;
         }
 
-        Timer timer = new Timer(1000, new ActionListener() {
+        Timer timer = new Timer(1500, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 ((Timer)e.getSource()).stop();
@@ -268,8 +625,8 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
                 refreshBattleBoards();
                 updateStatusLabels();
 
-                messageLabel.setText("Now it's " +
-                        getPlayerName(gameController.getCurrentPlayer()) + "'s turn.");
+                messageLabel.setText("➡️ " + getPlayerName(gameController.getCurrentPlayer()) +
+                        "'s turn to attack!");
 
                 attackAnimating = false;
             }
@@ -278,20 +635,56 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
         timer.start();
     }
 
+    /**
+     * Checks if a ship was sunk at the given coordinates.
+     * Returns true if the ship at this position is now completely destroyed.
+     */
+    private boolean checkIfShipSunk(PlayerModel defender, int hitRow, int hitCol) {
+        // Find the ship at this position
+        for (var ship : defender.getShips()) {
+            boolean containsHitPosition = false;
+
+            // Check if this ship contains the hit position
+            for (var pos : ship.getPositions()) {
+                if (pos.getxCor() == hitRow && pos.getyCor() == hitCol) {
+                    containsHitPosition = true;
+                    break;
+                }
+            }
+
+            if (!containsHitPosition) {
+                continue; // This ship doesn't contain the hit position
+            }
+
+            // Check if ALL positions of this ship are hit/sunk
+            boolean allHit = true;
+            for (var pos : ship.getPositions()) {
+                var state = defender.playerBoard.getCellState(pos.getxCor(), pos.getyCor());
+                if (state != Models.BoardModel.CellState.HIT &&
+                        state != Models.BoardModel.CellState.SUNK) {
+                    allHit = false;
+                    break;
+                }
+            }
+
+            return allHit; // Ship is sunk if all positions are hit
+        }
+
+        return false; // No ship found at this position
+    }
+
     private void refreshBattleBoards() {
         PlayerModel current = gameController.getCurrentPlayer();
-        PlayerModel opponent =
-                (current == gameController.getPlayer1())
-                        ? gameController.getPlayer2()
-                        : gameController.getPlayer1();
+        PlayerModel opponent = (current == gameController.getPlayer1())
+                ? gameController.getPlayer2()
+                : gameController.getPlayer1();
 
         playerBoardPanel.showBoardFromModel(current.playerBoard, false);
+        targetBoardPanel.showBoardFromModel(current.opponentBoard, true);
 
         currentPlayerLabel.setText(getPlayerName(current));
         phaseLabel.setText(gameController.getCurrentPhase().toString());
         shipsPlacedLabel.setText(current.getShips().size() + "/" + current.getRequiredShips());
-
-        targetBoardPanel.showBoardFromModel(current.opponentBoard, true);
     }
 
     private String getPlayerName(PlayerModel p) {
@@ -305,19 +698,59 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
         shipsPlacedLabel.setText(cp.getShips().size() + "/" + cp.getRequiredShips());
     }
 
+    private void showStyledDialog(String message, String title, int messageType) {
+        UIManager.put("OptionPane.messageFont", new Font("Arial", Font.PLAIN, 13));
+        JOptionPane.showMessageDialog(this, message, title, messageType);
+    }
+
     private void playExplosionSound() {
-        try {
-            java.net.URL url = getClass().getResource("/sounds/loud-explosion-425457.mp3");
-            if (url == null) {
-                System.err.println("Explosion sound not found on classpath.");
-                return;
+        new Thread(() -> {
+            tryPlaySoundFile("/sounds/explosion.wav");
+        }).start();
+    }
+
+    private void playShipSunkSound() {
+        new Thread(() -> {
+            // Try to play a special sunk sound, or use explosion as fallback
+            if (!tryPlaySoundFile("/sounds/sunk.wav")) {
+                tryPlaySoundFile("/sounds/shipsunk.wav");
             }
-            AudioInputStream audioIn = AudioSystem.getAudioInputStream(url);
+        }).start();
+    }
+
+    /**
+     * Attempts to play a sound file from resources.
+     * @param resourcePath Path to the sound file in resources (e.g., "/sounds/explosion.wav")
+     * @return true if sound was played successfully, false otherwise
+     */
+    private boolean tryPlaySoundFile(String resourcePath) {
+        try {
+            java.net.URL soundURL = getClass().getResource(resourcePath);
+            if (soundURL == null) {
+                return false;
+            }
+
+            AudioInputStream audioIn = AudioSystem.getAudioInputStream(soundURL);
             Clip clip = AudioSystem.getClip();
             clip.open(audioIn);
+
+            // Add listener to close clip when it finishes playing
+            clip.addLineListener(event -> {
+                if (event.getType() == LineEvent.Type.STOP) {
+                    clip.close();
+                    try {
+                        audioIn.close();
+                    } catch (Exception e) {
+                        // Ignore
+                    }
+                }
+            });
+
             clip.start();
+            return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            // File not found or couldn't play - return false to try next option
+            return false;
         }
     }
 
