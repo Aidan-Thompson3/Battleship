@@ -4,6 +4,9 @@ import Controllers.GameController;
 import Models.CoordinatesModel;
 import Models.PlayerModel;
 
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -29,34 +32,30 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
 
     private GameController gameController;
 
-    // Setup UI
     private BoardViewPanel setupBoardPanel;
     private JPanel setupControlPanel;
     private JButton placeShipBtn;
 
-    // Battle UI
     private JPanel battlePanel;
     private BoardViewPanel playerBoardPanel;
     private BoardViewPanel targetBoardPanel;
 
-    // Status labels
     private JLabel phaseLabel = new JLabel();
     private JLabel currentPlayerLabel = new JLabel();
     private JLabel shipsPlacedLabel = new JLabel();
     private JLabel messageLabel =
             new JLabel("Place your ships by selecting cells and clicking 'Place Ship'.");
 
-    // Standard Battleship ship lengths
     private final int[] shipLengths = {5, 4, 3, 3, 2};
     private int currentShipIndex = 0;
 
+    private boolean attackAnimating = false;
+
     GameWindowPanel(){
-        System.out.println("Game Window Panel constructor");
         setLayout(new BorderLayout(5,5));
 
         gameController = new GameController();
 
-        // ---------- TOP STATUS BAR ----------
         JPanel statusPanel = new JPanel(new GridLayout(2, 1));
         JPanel topRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topRow.add(new JLabel("Phase: "));
@@ -75,12 +74,10 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
         statusPanel.add(bottomRow);
         add(statusPanel, BorderLayout.NORTH);
 
-        // ---------- CENTER: SETUP BOARD
         setupBoardPanel = new BoardViewPanel();
         setupBoardPanel.setMode(BoardViewPanel.BoardMode.SETUP_SELECTION);
         add(setupBoardPanel, BorderLayout.CENTER);
 
-        // ---------- BOTTOM: controls for setup ----------
         setupControlPanel = new JPanel();
         JButton horizontalBtn = new JButton("Horizontal (visual only)");
         JButton verticalBtn = new JButton("Vertical (visual only)");
@@ -102,7 +99,6 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
 
         updateStatusLabels();
     }
-
 
     private void onPlaceShip() {
         List<CoordinatesModel> selected =
@@ -134,14 +130,10 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
             return;
         }
 
-        System.out.println("Attempting to place ship of length " + requiredLength);
-
-        // Detect if the currentPlayer switches after placing (meaning we finished one player's setup)
         PlayerModel before = gameController.getCurrentPlayer();
         boolean success = gameController.placeShip(selected);
 
         if (success) {
-            // Permanently mark ship on this setup board
             setupBoardPanel.markPlacedShip(selected);
             setupBoardPanel.clearSelection();
 
@@ -151,7 +143,6 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
             int requiredShips = before.getRequiredShips();
             shipsPlacedLabel.setText(Math.min(shipsPlaced, requiredShips) + "/" + requiredShips);
 
-            // Check if we just switched to the other player's setup
             if (gameController.getCurrentPhase() == GameController.GamePhase.SETUP &&
                     gameController.getCurrentPlayer() != before) {
 
@@ -161,17 +152,14 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
                         "Switch Player",
                         JOptionPane.INFORMATION_MESSAGE);
 
-                // Reset ship index for the next player
                 currentShipIndex = 0;
 
-                // Start with a fresh setup board for the next player
                 remove(setupBoardPanel);
                 setupBoardPanel = new BoardViewPanel();
                 setupBoardPanel.setMode(BoardViewPanel.BoardMode.SETUP_SELECTION);
                 add(setupBoardPanel, BorderLayout.CENTER);
             }
 
-            // If phase changed to PLAYER1_TURN, both players are done; enter battle mode
             if (gameController.getCurrentPhase() == GameController.GamePhase.PLAYER1_TURN) {
                 enterBattleMode();
             }
@@ -188,25 +176,19 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
         repaint();
     }
 
-
     private void enterBattleMode() {
-        // Remove setup board from center
         remove(setupBoardPanel);
 
-        // Create side-by-side boards for battle
         battlePanel = new JPanel(new GridLayout(1, 2, 10, 10));
         playerBoardPanel = new BoardViewPanel();
         targetBoardPanel = new BoardViewPanel();
 
-        // Own board is view only; opponent board is clickable
         playerBoardPanel.setMode(BoardViewPanel.BoardMode.VIEW_ONLY);
         targetBoardPanel.setMode(BoardViewPanel.BoardMode.BATTLE_TARGET);
 
-        // In battle, we don't use the selection list in these panels
         playerBoardPanel.selectedCoordinates.clear();
         targetBoardPanel.selectedCoordinates.clear();
 
-        // Attack handler for the target board
         targetBoardPanel.setAttackListener(new AttackListener() {
             @Override
             public void onAttack(int row, int col) {
@@ -219,7 +201,6 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
 
         add(battlePanel, BorderLayout.CENTER);
 
-        // Hide setup controls
         setupControlPanel.setVisible(false);
         placeShipBtn.setVisible(false);
 
@@ -227,7 +208,6 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
                 getPlayerName(gameController.getCurrentPlayer()) +
                 " attacks first. Click on the right board to fire.");
 
-        // Initial draw
         refreshBattleBoards();
 
         revalidate();
@@ -241,38 +221,62 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
-
     private void handleAttack(int row, int col) {
+        if (attackAnimating) {
+            return;
+        }
         if (gameController.getCurrentPhase() == GameController.GamePhase.GAME_OVER) {
             return;
         }
 
+        attackAnimating = true;
+
         boolean hit = gameController.attack(row, col);
 
         if (hit) {
-            messageLabel.setText("HIT at (" + row + ", " + col + ")! " +
-                    "Now it's " + getPlayerName(gameController.getCurrentPlayer()) + "'s turn.");
+            playExplosionSound();
+            messageLabel.setText("HIT at (" + row + ", " + col + ")! You go again.");
         } else {
-            messageLabel.setText("Miss or already targeted at (" + row + ", " + col + "). " +
-                    "Now it's " + getPlayerName(gameController.getCurrentPlayer()) + "'s turn.");
+            messageLabel.setText("Miss or already targeted at (" + row + ", " + col + ").");
         }
+
+        refreshBattleBoards();
 
         if (gameController.getCurrentPhase() == GameController.GamePhase.GAME_OVER) {
             String winner = getPlayerName(gameController.getCurrentPlayer());
-            refreshBattleBoards();
             JOptionPane.showMessageDialog(this,
                     winner + " wins! All enemy ships have been sunk.",
                     "Game Over",
                     JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            refreshBattleBoards();
+            attackAnimating = false;
+            updateStatusLabels();
+            return;
         }
 
-        updateStatusLabels();
-        revalidate();
-        repaint();
-    }
+        if (hit) {
+            attackAnimating = false;
+            updateStatusLabels();
+            return;
+        }
 
+        Timer timer = new Timer(1000, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ((Timer)e.getSource()).stop();
+
+                gameController.endTurn();
+                refreshBattleBoards();
+                updateStatusLabels();
+
+                messageLabel.setText("Now it's " +
+                        getPlayerName(gameController.getCurrentPlayer()) + "'s turn.");
+
+                attackAnimating = false;
+            }
+        });
+        timer.setRepeats(false);
+        timer.start();
+    }
 
     private void refreshBattleBoards() {
         PlayerModel current = gameController.getCurrentPlayer();
@@ -281,14 +285,11 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
                         ? gameController.getPlayer2()
                         : gameController.getPlayer1();
 
-
         playerBoardPanel.showBoardFromModel(current.playerBoard, false);
-
 
         currentPlayerLabel.setText(getPlayerName(current));
         phaseLabel.setText(gameController.getCurrentPhase().toString());
         shipsPlacedLabel.setText(current.getShips().size() + "/" + current.getRequiredShips());
-
 
         targetBoardPanel.showBoardFromModel(current.opponentBoard, true);
     }
@@ -304,9 +305,24 @@ class GameWindowPanel extends JPanel implements ActionListener, ItemListener {
         shipsPlacedLabel.setText(cp.getShips().size() + "/" + cp.getRequiredShips());
     }
 
+    private void playExplosionSound() {
+        try {
+            java.net.URL url = getClass().getResource("/sounds/loud-explosion-425457.mp3");
+            if (url == null) {
+                System.err.println("Explosion sound not found on classpath.");
+                return;
+            }
+            AudioInputStream audioIn = AudioSystem.getAudioInputStream(url);
+            Clip clip = AudioSystem.getClip();
+            clip.open(audioIn);
+            clip.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
-
     }
 
     @Override

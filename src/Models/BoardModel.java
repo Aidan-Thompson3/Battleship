@@ -8,6 +8,7 @@ public class BoardModel {
         HIT,             // Attacked, ship was here
         SUNK             // Ship cell that is part of a fully-sunk ship
     }
+
     private CellState[][] boardArray;
     private int boardColumns;
     private int boardRows;
@@ -34,6 +35,7 @@ public class BoardModel {
     public CellState getCellState(int row, int col){
         return boardArray[row][col];
     }
+
     public void setCellState(int row, int col, CellState state){
         boardArray[row][col] = state;
     }
@@ -67,7 +69,6 @@ public class BoardModel {
         }
         System.out.println("   ----------------------");
 
-        // Print legend
         System.out.println("\n   Legend: · = Empty  S = Ship  X = Hit/Sunk  O = Miss");
     }
 
@@ -86,5 +87,4 @@ public class BoardModel {
                 return "?";
         }
     }
-
 }

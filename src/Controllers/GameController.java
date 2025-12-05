@@ -1,4 +1,5 @@
 package Controllers;
+
 import Models.CoordinatesModel;
 import Models.PlayerModel;
 import Models.ShipModel;
@@ -40,24 +41,20 @@ public class GameController {
     }
 
     public boolean placeShip(List<CoordinatesModel> positions) {
-        // Only in setup phase
         if (currentPhase != GamePhase.SETUP) {
-            System.out.println("Cannot place ships outside of SETUP phase");
+            System.out.println("Cannot place ships outside of SETUP phase.");
             return false;
         }
 
-        // Delegates to PlayerModel for validation of ship placement
         boolean success = currentPlayer.placeShip(positions);
 
         if (success) {
             if (currentPlayer.allShipsPlaced()) {
                 if (currentPlayer == player1 && !player2.allShipsPlaced()) {
-                    // Switch to player 2
                     currentPlayer = player2;
-                    System.out.println("Player 1 finished placing ships. Player 2's turn to place.");
+                    System.out.println("Player 1 finished placing ships. Now Player 2 places ships.");
                 } else if (player1.allShipsPlaced() && player2.allShipsPlaced()) {
-                    // Both done - start battle
-                    System.out.println("Battle starting!");
+                    System.out.println("All ships placed for both players. Starting battle!");
                     startBattle();
                 }
             }
@@ -71,11 +68,16 @@ public class GameController {
             currentPlayer = player1;
             System.out.println("Battle begins! Player 1 attacks first.");
         } else {
-            System.out.println("Cannot start battle; not all ships placed.");
+            System.out.println("Cannot start battle – not all ships are placed.");
         }
     }
 
-
+    /**
+     * Perform an attack from the current player to the opposing player.
+     * This method DOES NOT switch turns; UI should call endTurn() after a delay.
+     *
+     * @return true if it was a hit, false otherwise.
+     */
     public boolean attack(int row, int col) {
         if (currentPhase != GamePhase.PLAYER1_TURN &&
                 currentPhase != GamePhase.PLAYER2_TURN) {
@@ -114,20 +116,26 @@ public class GameController {
             System.out.println("Cell (" + row + "," + col + ") has already been targeted.");
         }
 
-        // Switch turns if game not over
-        if (currentPhase != GamePhase.GAME_OVER) {
-            if (currentPhase == GamePhase.PLAYER1_TURN) {
-                currentPhase = GamePhase.PLAYER2_TURN;
-                currentPlayer = player2;
-            } else if (currentPhase == GamePhase.PLAYER2_TURN) {
-                currentPhase = GamePhase.PLAYER1_TURN;
-                currentPlayer = player1;
-            }
-        }
-
         return hit;
     }
 
+    /**
+     * Called by the UI AFTER showing the result of the attack (e.g., after 1 second).
+     * Switches to the other player if the game is not over.
+     */
+    public void endTurn() {
+        if (currentPhase == GamePhase.GAME_OVER) {
+            return;
+        }
+
+        if (currentPhase == GamePhase.PLAYER1_TURN) {
+            currentPhase = GamePhase.PLAYER2_TURN;
+            currentPlayer = player2;
+        } else if (currentPhase == GamePhase.PLAYER2_TURN) {
+            currentPhase = GamePhase.PLAYER1_TURN;
+            currentPlayer = player1;
+        }
+    }
 
     private boolean isShipSunkAt(PlayerModel defender, int row, int col) {
         for (ShipModel ship : defender.getShips()) {
@@ -162,7 +170,6 @@ public class GameController {
         }
         return false;
     }
-
 
     private boolean areAllShipsSunk(PlayerModel player) {
         for (ShipModel ship : player.getShips()) {
@@ -200,7 +207,6 @@ public class GameController {
         return (p == player1) ? "Player 1" : "Player 2";
     }
 
-    //Getters
     public GamePhase getCurrentPhase() {
         return currentPhase;
     }
@@ -216,5 +222,4 @@ public class GameController {
     public PlayerModel getPlayer2() {
         return player2;
     }
-
 }

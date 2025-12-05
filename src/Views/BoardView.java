@@ -1,37 +1,35 @@
 package Views;
-
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemListener;
 import java.awt.event.ItemEvent;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 import javax.swing.*;
-
+import java.util.List;
 import Models.*;
 import Models.BoardModel.CellState;
 
-/**
- * Simple test harness for the board on its own.
- */
 public class BoardView {
-    public static void main(String[] args) {
-        JFrame frame = new JFrame("BoardView Test");
+    public static void main(String args[]) {
+        JFrame frame = new JFrame("title");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(600, 600);
-        BoardViewPanel panel = new BoardViewPanel();
-        frame.add(panel);
+        frame.setSize(600,600);
+        BoardViewPanel gwp = new BoardViewPanel();
+        frame.add(gwp);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 }
 
-/**
- * 10x10 grid panel used for setup and battle.
- */
-class BoardViewPanel extends JPanel implements ActionListener, ItemListener {
+class BoardViewPanel extends JPanel implements ActionListener, ItemListener{
+    private GridLayout gridLayout;
+    private static final String[] ROW_LABELS = {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"};
+    JButton[][] boardButtons = new JButton[10][10];
+
+    // used during setup
+    List<CoordinatesModel> selectedCoordinates = new ArrayList<>();
+    private boolean[][] hasShip = new boolean[10][10];
 
     public enum BoardMode {
         SETUP_SELECTION,
@@ -39,67 +37,41 @@ class BoardViewPanel extends JPanel implements ActionListener, ItemListener {
         VIEW_ONLY
     }
 
-    private static final String[] ROW_LABELS =
-            {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"};
-
-    JButton[][] boardButtons = new JButton[10][10];
-    List<CoordinatesModel> selectedCoordinates = new ArrayList<>();
-    private boolean[][] hasShip = new boolean[10][10];
-
     private BoardMode mode = BoardMode.SETUP_SELECTION;
     private AttackListener attackListener;
 
-    // 🔥 Hit icon
-    private ImageIcon hitIcon;
-
-    public BoardViewPanel() {
-        // Layout: 10x10 board + row/col labels = 11x11
-        GridLayout gridLayout = new GridLayout(11, 11);
+    public BoardViewPanel(){
+        // 10x10 grid to include row and column labels
+        gridLayout = new GridLayout(11, 11);
         setLayout(gridLayout);
 
-        // Top-left corner
-        add(new JLabel(""));
+        // Top-left corner (empty space)
+        JLabel corner = new JLabel("");
+        add(corner);
 
-        // Column headers (1–10)
-        for (int col = 1; col <= 10; col++) {
+        // Add column numbers (1-10)
+        for(int col = 1; col <= 10; col++){
             JLabel colLabel = new JLabel(String.valueOf(col), SwingConstants.CENTER);
             colLabel.setFont(new Font("Arial", Font.BOLD, 12));
             add(colLabel);
         }
 
-        // Rows
-        for (int row = 0; row < 10; row++) {
-            // Row label (A–J)
+        // Add rows with letter labels and buttons
+        for(int row = 0; row < 10; row++){
+            // Add row letter (A-J)
             JLabel rowLabel = new JLabel(ROW_LABELS[row], SwingConstants.CENTER);
             rowLabel.setFont(new Font("Arial", Font.BOLD, 12));
             add(rowLabel);
 
-            for (int col = 0; col < 10; col++) {
+            // Add JButtons for this row
+            for(int col = 0; col < 10; col++){
                 JButton button = new JButton();
                 button.setOpaque(true);
-                button.setBackground(Color.WHITE);
                 button.addActionListener(this);
-                button.setActionCommand(row + "," + col);
+                button.setActionCommand(row + "," + col); // attach coordinate
                 boardButtons[row][col] = button;
                 add(button);
             }
-        }
-
-        loadHitIcon();
-    }
-
-
-    private void loadHitIcon() {
-        try {
-            // Adjust path/name if you call the file something else
-            ImageIcon raw = new ImageIcon(
-                    Objects.requireNonNull(BoardViewPanel.class.getResource("/Users/aidanthompson/Desktop/CS/COP3252/Battleship/src/resources"))
-            );
-            Image scaled = raw.getImage().getScaledInstance(32, 32, Image.SCALE_SMOOTH);
-            hitIcon = new ImageIcon(scaled);
-        } catch (Exception ex) {
-            System.err.println("Could not load /fire.png – hits will use X text instead.");
-            hitIcon = null;
         }
     }
 
@@ -111,36 +83,43 @@ class BoardViewPanel extends JPanel implements ActionListener, ItemListener {
         this.attackListener = listener;
     }
 
-    @Override
     public void actionPerformed(ActionEvent e) {
         JButton clickedButton = (JButton) e.getSource();
-        String[] parts = clickedButton.getActionCommand().split(",");
+        String coordinates = clickedButton.getActionCommand();
+
+        String[] parts = coordinates.split(",");
         int row = Integer.parseInt(parts[0]);
         int col = Integer.parseInt(parts[1]);
 
         if (mode == BoardMode.SETUP_SELECTION) {
+            // Don't allow selecting cells that already have ships
             if (hasShip[row][col]) {
-                // Can't re-select a permanent ship cell
+                System.out.println("Cannot select (" + row + ", " + col + ") - ship already placed here!");
                 return;
             }
 
-            // Toggle selection
-            if (clickedButton.getText().isEmpty()) {
-                clickedButton.setText("X");
-                clickedButton.setIcon(null);
-                clickedButton.setBackground(Color.CYAN);
+            System.out.println("Button Clicked at " + coordinates);
 
-                selectedCoordinates.add(new CoordinatesModel(row, col));
-            } else {
+            if(clickedButton.getText().isEmpty()){
+                clickedButton.setText("O");
+                clickedButton.setForeground(Color.BLACK);
+                clickedButton.setBackground(Color.CYAN); // temp selection
+                clickedButton.setOpaque(true);
+
+                CoordinatesModel coord = new CoordinatesModel(row, col);
+                selectedCoordinates.add(coord);
+                System.out.println("Added coordinate: (" + row + ", " + col + ")");
+            }
+            else {
                 clickedButton.setText("");
-                clickedButton.setIcon(null);
                 clickedButton.setBackground(Color.WHITE);
+                clickedButton.setForeground(Color.BLACK);
 
-                selectedCoordinates.removeIf(c ->
-                        c.getxCor() == row && c.getyCor() == col);
+                selectedCoordinates.removeIf(c -> c.getxCor() == row && c.getyCor() == col);
+                System.out.println("Removed coordinate: (" + row + ", " + col + ")");
             }
         } else if (mode == BoardMode.BATTLE_TARGET) {
-            // In battle mode, this is an attack
+            // in battle mode, this is an attack
             if (attackListener != null) {
                 attackListener.onAttack(row, col);
             }
@@ -149,46 +128,52 @@ class BoardViewPanel extends JPanel implements ActionListener, ItemListener {
         }
     }
 
-
     public void clearSelection() {
+        // Only clear cells that don't have ships placed on them
         for (int row = 0; row < 10; row++) {
             for (int col = 0; col < 10; col++) {
                 if (!hasShip[row][col]) {
-                    JButton btn = boardButtons[row][col];
-                    btn.setText("");
-                    btn.setIcon(null);
-                    btn.setBackground(Color.WHITE);
+                    boardButtons[row][col].setText("");
+                    boardButtons[row][col].setBackground(Color.WHITE);
+                    boardButtons[row][col].setForeground(Color.BLACK);
                 }
             }
         }
         selectedCoordinates.clear();
+        System.out.println("Selection cleared (ships remain marked)");
     }
 
-
     public void markPlacedShip(List<CoordinatesModel> positions) {
+        // Mark these cells as having ships and make them permanently colored
         for (CoordinatesModel pos : positions) {
             int row = pos.getxCor();
             int col = pos.getyCor();
-            if (row < 0 || row >= 10 || col < 0 || col >= 10) continue;
-
             hasShip[row][col] = true;
             JButton btn = boardButtons[row][col];
-            btn.setIcon(null);
-            btn.setText("S");
-            btn.setBackground(Color.GRAY);
+            btn.setText("O");                      // ship circle
+            btn.setForeground(Color.DARK_GRAY);
+            btn.setBackground(Color.GRAY);         // Permanent gray for placed ships
+            btn.setOpaque(true);
         }
     }
 
-
+    /**
+     * Used in battle to render the board.
+     * MISS: blue circle
+     * HIT:  red circle
+     * SUNK: darker red circle
+     */
     public void showBoardFromModel(BoardModel model, boolean hideShips) {
+        Color sunkColor = new Color(139, 0, 0); // dark red
+
         for (int row = 0; row < 10; row++) {
             for (int col = 0; col < 10; col++) {
                 CellState state = model.getCellState(row, col);
                 JButton btn = boardButtons[row][col];
 
-                // Always clear icon/text first
-                btn.setIcon(null);
                 btn.setText("");
+                btn.setIcon(null);
+                btn.setForeground(Color.BLACK);
 
                 switch (state) {
                     case EMPTY:
@@ -200,23 +185,27 @@ class BoardViewPanel extends JPanel implements ActionListener, ItemListener {
                             btn.setBackground(Color.WHITE);
                         } else {
                             btn.setBackground(Color.GRAY);
-                            btn.setText("S");
+                            btn.setText("O");
+                            btn.setForeground(Color.DARK_GRAY);
                         }
                         break;
 
                     case MISS:
-                        btn.setBackground(Color.BLUE);
+                        btn.setBackground(Color.WHITE);
                         btn.setText("O");
+                        btn.setForeground(Color.BLUE);   // blue circle = miss
                         break;
 
                     case HIT:
+                        btn.setBackground(Color.WHITE);
+                        btn.setText("O");
+                        btn.setForeground(Color.RED);    // red circle = hit
+                        break;
+
                     case SUNK:
-                        btn.setBackground(Color.WHITE); // or Color.RED if you want
-                        if (hitIcon != null) {
-                            btn.setIcon(hitIcon);   // 🔥 use the flame image
-                        } else {
-                            btn.setText("X");       // fallback if icon missing
-                        }
+                        btn.setBackground(Color.WHITE);
+                        btn.setText("O");
+                        btn.setForeground(sunkColor);    // darker red = sunk
                         break;
                 }
 
@@ -225,13 +214,19 @@ class BoardViewPanel extends JPanel implements ActionListener, ItemListener {
         }
     }
 
-    @Override
     public void itemStateChanged(ItemEvent e) {
-        // Not used, but kept for interface compatibility
+        if (e.getStateChange() == ItemEvent.SELECTED) {
+            System.out.println("Checked!");
+
+        } else {
+            System.out.println("Unchecked!");
+        }
     }
 }
 
-
+/**
+ * Used by GameWindow when the board is in BATTLE_TARGET mode.
+ */
 interface AttackListener {
     void onAttack(int row, int col);
 }
