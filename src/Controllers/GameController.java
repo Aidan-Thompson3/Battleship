@@ -1,5 +1,4 @@
 package Controllers;
-
 import Models.CoordinatesModel;
 import Models.PlayerModel;
 import Models.ShipModel;
@@ -14,18 +13,18 @@ public class GameController {
     private GamePhase currentPhase;
     private PlayerModel currentPlayer;
 
-    public enum GamePhase {
+    public enum GamePhase{
         SETUP,
         PLAYER1_TURN,
         PLAYER2_TURN,
         GAME_OVER
     }
 
-    public GameController() {
+    public GameController(){
         initializeGame();
     }
 
-    public void initializeGame() {
+    public void initializeGame(){
         currentPhase = GamePhase.SETUP;
         player1 = new PlayerModel();
         player2 = new PlayerModel();
@@ -40,34 +39,29 @@ public class GameController {
         return player1.allShipsPlaced() && player2.allShipsPlaced();
     }
 
-    /**
-     * Place a ship for the current player during SETUP.
-     */
     public boolean placeShip(List<CoordinatesModel> positions) {
+        // Only in setup phase
         if (currentPhase != GamePhase.SETUP) {
-            System.out.println("Cannot place ships – setup phase is over.");
+            System.out.println("Cannot place ships outside of SETUP phase");
             return false;
         }
 
-        PlayerModel before = currentPlayer;
+        // Delegates to PlayerModel for validation of ship placement
         boolean success = currentPlayer.placeShip(positions);
 
         if (success) {
-            String who = (before == player1) ? "Player 1" : "Player 2";
-            System.out.println(who + " placed a ship of length " + positions.size());
-
-            if (before.allShipsPlaced()) {
-                if (before == player1 && !player2.allShipsPlaced()) {
-                    // Switch to player 2 setup
+            if (currentPlayer.allShipsPlaced()) {
+                if (currentPlayer == player1 && !player2.allShipsPlaced()) {
+                    // Switch to player 2
                     currentPlayer = player2;
-                    System.out.println("Player 1 finished placing ships. Now Player 2 places ships.");
+                    System.out.println("Player 1 finished placing ships. Player 2's turn to place.");
                 } else if (player1.allShipsPlaced() && player2.allShipsPlaced()) {
-                    // Both done – start the battle
+                    // Both done - start battle
+                    System.out.println("Battle starting!");
                     startBattle();
                 }
             }
         }
-
         return success;
     }
 
@@ -77,14 +71,14 @@ public class GameController {
             currentPlayer = player1;
             System.out.println("Battle begins! Player 1 attacks first.");
         } else {
-            System.out.println("Cannot start battle – not all ships are placed.");
+            System.out.println("Cannot start battle; not all ships placed.");
         }
     }
 
 
     public boolean attack(int row, int col) {
-        if (currentPhase != GamePhase.PLAYER1_TURN
-                && currentPhase != GamePhase.PLAYER2_TURN) {
+        if (currentPhase != GamePhase.PLAYER1_TURN &&
+                currentPhase != GamePhase.PLAYER2_TURN) {
             System.out.println("Cannot attack – not in battle phase.");
             return false;
         }
@@ -117,9 +111,10 @@ public class GameController {
                 System.out.println(getPlayerName(attacker) + " wins! All enemy ships sunk.");
             }
         } else {
-            System.out.println("Cell (" + row + "," + col + ") was already targeted.");
+            System.out.println("Cell (" + row + "," + col + ") has already been targeted.");
         }
 
+        // Switch turns if game not over
         if (currentPhase != GamePhase.GAME_OVER) {
             if (currentPhase == GamePhase.PLAYER1_TURN) {
                 currentPhase = GamePhase.PLAYER2_TURN;
@@ -132,6 +127,7 @@ public class GameController {
 
         return hit;
     }
+
 
     private boolean isShipSunkAt(PlayerModel defender, int row, int col) {
         for (ShipModel ship : defender.getShips()) {
@@ -167,6 +163,7 @@ public class GameController {
         return false;
     }
 
+
     private boolean areAllShipsSunk(PlayerModel player) {
         for (ShipModel ship : player.getShips()) {
             for (CoordinatesModel pos : ship.getPositions()) {
@@ -180,21 +177,14 @@ public class GameController {
         return true;
     }
 
-    private String getPlayerName(PlayerModel p) {
-        return (p == player1) ? "Player 1" : "Player 2";
-    }
+    public void printPlayerShips(){
+        String playerName = (currentPlayer == player1) ? "Player 1" : "Player 2";
+        System.out.println("\n=== " + playerName + "'s Ships ===");
+        System.out.println("Total ships placed: " + currentPlayer.ships.size());
 
-    public void printPlayerShips() {
-        printShipsForPlayer(player1, "Player 1");
-        printShipsForPlayer(player2, "Player 2");
-    }
-
-    private void printShipsForPlayer(PlayerModel player, String playerName) {
-        System.out.println("\n=== " + playerName + " Ships ===");
-        List<ShipModel> ships = player.getShips();
-        for (int i = 0; i < ships.size(); i++) {
-            ShipModel ship = ships.get(i);
-            System.out.println("Ship #" + (i + 1) + ":");
+        for (int i = 0; i < currentPlayer.ships.size(); i++) {
+            ShipModel ship = currentPlayer.ships.get(i);
+            System.out.println("\nShip #" + (i + 1) + ":");
             System.out.println("  Length: " + ship.length);
             System.out.println("  Orientation: " + ship.orientation);
             System.out.println("  Positions:");
@@ -202,11 +192,15 @@ public class GameController {
                 System.out.println("    - Row: " + pos.getxCor() + ", Col: " + pos.getyCor());
             }
         }
-        System.out.println("\n=== " + playerName + " Board ===");
-        player.playerBoard.printBoard();
+        System.out.println("\n=== " + playerName + "'s Board ===");
+        currentPlayer.playerBoard.printBoard();
     }
 
-    // Getters
+    private String getPlayerName(PlayerModel p) {
+        return (p == player1) ? "Player 1" : "Player 2";
+    }
+
+    //Getters
     public GamePhase getCurrentPhase() {
         return currentPhase;
     }
@@ -222,4 +216,5 @@ public class GameController {
     public PlayerModel getPlayer2() {
         return player2;
     }
+
 }
